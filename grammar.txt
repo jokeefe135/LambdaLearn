@@ -1,0 +1,11 @@
+expression ::= variable
+             | abstraction
+             | application
+             | "(" expression ")"
+
+variable    ::= [a-zA-Z_][a-zA-Z0-9_]*
+
+abstraction ::= "\" variable "." expression
+              | "λ" variable "." expression
+
+application ::= expression expression
