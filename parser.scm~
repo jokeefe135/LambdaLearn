@@ -1,0 +1,94 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; GRAMMAR
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; expression   ::= abstraction
+;;                | application
+;; 
+;; abstraction  ::= ("\" | "λ") variable "." expression
+;; 
+;; application  ::= atomic { atomic }      ; one or more atomics
+;; 
+;; atomic       ::= variable
+;;                | "(" expression ")"
+;;
+;; variable     ::= [a-zA-Z_][a-zA-Z0-9_]*
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; TOKENIZER
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; tokenize : String → (Listof Symbol)
+;;   splits on whitespace and these single-char tokens:
+;;     ( )  \  λ  .
+;;   everything else matching [A-Za-z_][A-Za-z0-9_]* becomes an identifier symbol.
+(define (tokenize str)
+  (let ((len (string-length str)))
+    ;; character tests:
+    (define (is-letter? c)
+      (or (and (char>=? c #\A) (char<=? c #\Z))
+          (and (char>=? c #\a) (char<=? c #\z))))
+    (define (is-digit? c)
+      (and (char>=? c #\0) (char<=? c #\9)))
+    (define (is-ident-start? c)
+      (or (is-letter? c) (char=? c #\_)))
+    (define (is-ident-part? c)
+      (or (is-letter? c) (is-digit? c) (char=? c #\_)))
+
+    (let loop ((i 0) (tokens '()))
+      (if (>= i len)
+          (reverse tokens)
+          (let ((c (string-ref str i)))
+            (cond
+             ;; skip whitespace
+             ((or (char=? c #\space)
+                  (char=? c #\tab)
+                  (char=? c #\newline)
+                  (char=? c #\return))
+              (loop (+ i 1) tokens))
+
+             ;; single-char: ( ) \ λ .
+             ((or (char=? c #\(  )
+                  (char=? c #\)  )
+                  (char=? c #\\  )
+                  (char=? c #\λ  )
+                  (char=? c #\. ))
+              (loop (+ i 1)
+                    (cons (string->symbol (string c)) tokens)))
+
+             ;; variable identifier
+             ((is-ident-start? c)
+              (let loop2 ((j i))
+                (if (and (< j len) (is-ident-part? (string-ref str j)))
+                    (loop2 (+ j 1))
+                    (let ((name (substring str i j)))
+                      (loop j (cons (string->symbol name) tokens))))))
+
+             ;; anything else is an error
+             (else
+              (error "tokenize: unexpected character" c))))))))
+
+;; Tests
+;; (tokenize "λx.x")
+;; (tokenize "  λ   x  .  (  x   x )   ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; PARSER
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; AST representation:
+;;   - variable   : just a Scheme symbol, e.g. 'x
+;;   - abstraction: (lambda var body)
+;;   - application: (app    func arg)
+
+;; Entry point: parse a full expression and ensure no leftover tokens.
+(define (parse tokens)
+  (let-values (((expr rest) (parse-expression tokens)))
+    (if (null? rest)
+        expr
+        (error "parse: extra tokens after end of input:" rest))))
+
+;; expression ::= abstraction | application
+;; First define abstraction and application predicates
+(define (abstraction? expr)
+  )

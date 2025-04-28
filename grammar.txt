@@ -1,11 +1,11 @@
-expression ::= variable
-             | abstraction
-             | application
-             | "(" expression ")"
+expression   ::= abstraction
+               | application
 
-variable    ::= [a-zA-Z_][a-zA-Z0-9_]*
+abstraction  ::= ("\" | "λ") variable "." expression
 
-abstraction ::= "\" variable "." expression
-              | "λ" variable "." expression
+application  ::= atomic { atomic }      ; one or more atomics
 
-application ::= expression expression
+atomic       ::= variable
+               | "(" expression ")"
+
+variable     ::= [a-zA-Z_][a-zA-Z0-9_]*
