@@ -1,7 +1,7 @@
 expression   ::= abstraction
                | application
 
-abstraction  ::= ("\" | "λ") variable "." expression
+abstraction  ::= "λ" variable "." expression
 
 application  ::= atomic { atomic }      ; one or more atomics
 
