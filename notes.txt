@@ -1,0 +1,1 @@
+I think one way to show flexibility is to have two versions of beta reductions. Could be normal order and applicative order. Could be other ways as well.

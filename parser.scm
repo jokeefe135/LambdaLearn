@@ -159,3 +159,7 @@
 ;; (define toks (tokenize   "  λcompose.  λf.λg. λx. compose f (g x) (λid.λy.y_x1) arg_1  "))
 ;; (define ast (parse toks))
 ;; (pp ast)
+;;
+;; (define toks (tokenize "(λx. x x) (λy.y)"))
+;; (define ast (parse toks))
+;; (pp ast)
