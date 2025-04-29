@@ -1,0 +1,26 @@
+# Emacs backup files
+*~
+# Auto-save files
+# (these often start with `.#` but it's safer to match hidden dot files)
+.#*
+*.autosave
+
+# Emacs customizations
+.emacs.desktop
+.emacs.desktop.lock
+*.elc
+flycheck_*.el
+
+# MIT Scheme compiled/intermediate files
+*.com
+*.bin
+*.bci
+
+# Scheme history file
+.history
+
+# macOS / system files
+.DS_Store
+
+# Project-specific cache or build dirs (if any)
+build/
