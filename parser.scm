@@ -18,7 +18,7 @@
 ;;; TOKENIZER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; tokenize : String → (Listof Symbol)
+;; tokenize : String -> (Listof Symbol)
 ;;   splits on whitespace and these single-char tokens:
 ;;     ( )  λ  .
 ;;   everything else matching [A-Za-z_][A-Za-z0-9_]* becomes an identifier symbol.
