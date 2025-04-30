@@ -1,0 +1,41 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; UNTYPED PARSE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (parse-expression-untyped tokens)
+  (if (and (pair? tokens) (eq? (car tokens) sym-lambda))
+      (parse-abstraction-untyped tokens)
+      (parse-application-untyped tokens)))
+
+;; abstraction ::= 'λ' variable '.' expression
+(define (parse-abstraction-untyped tokens)
+  (unless (identifier? (cadr tokens))
+    (error "untyped λ: expected variable"))
+  (unless (eq? (caddr tokens) sym-period)
+    (error "untyped λ: expected '.'"))
+  (let-values (((body rest) (parse-expression-untyped (cdddr tokens))))
+    (values (list 'lambda (cadr tokens) #f body) rest)))
+
+;; application ::= atomic { atomic }
+(define (parse-application-untyped tokens)
+  (let-values (((head rest) (parse-atomic-untyped tokens)))
+    (let loop ((acc head) (ts rest))
+      (if (and (pair? ts)
+               (or (identifier? (car ts))
+                   (eq? (car ts) sym-open)
+                   (eq? (car ts) sym-lambda)))
+          (let-values (((arg rest2) (parse-atomic-untyped ts)))
+            (loop (list 'app acc arg) rest2))
+          (values acc ts)))))
+
+(define (parse-atomic-untyped tokens)
+  (cond
+    ((identifier? (car tokens))
+     (values (car tokens) (cdr tokens)))
+    ((eq? (car tokens) sym-open)
+     (let-values (((expr rest) (parse-expression-untyped (cdr tokens))))
+       (unless (and (pair? rest) (eq? (car rest) sym-close))
+         (error "untyped atom: missing ')'"))
+       (values expr (cdr rest))))
+    (else
+     (error "untyped atom: unexpected token" (car tokens)))))
