@@ -14,8 +14,7 @@
        ((string=? line "")
         (loop))
        (else
-        (let* ((tokens (tokenize line))
-               (expr   (parse tokens))
+        (let* ((expr   (parse line))
                (result (g:eval expr)))
           (write result)
           (newline)
