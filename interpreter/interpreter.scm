@@ -47,7 +47,9 @@
    (lambda (expr) (symbol? expr))
    (lambda (expr) (and (pair? expr) (eq? (car expr) '->)))
    (lambda (expected actual)
-     (cond ((and (symbol? expected) (symbol? actual))
+     (cond ((eq? expected #f) #t)  ; Allow untyped to match anything
+           ((eq? actual #f) #t)    ; Allow anything to match untyped
+           ((and (symbol? expected) (symbol? actual))
             (eq? expected actual))
            ((and (pair? expected) (pair? actual)
                  (eq? (car expected) '->) (eq? (car actual) '->))
@@ -217,6 +219,29 @@
             (error "Type error: expected" typ "but got" arg-type)))
       (subst param arg body))))
 
+;; Handlers for untyped operations
+(define-generic-procedure-handler g:eval
+  (match-args application?)
+  (lambda (expr)
+    (let* ((raw-op (operator expr))
+           (raw-arg (operand expr))
+           (proc (g:eval raw-op))
+           (arg (g:eval raw-arg))
+           (redex (list 'app proc arg))
+           (new-expr (g:apply proc (list arg))))
+      (trace-step redex new-expr "β")
+      (g:eval new-expr))))
+
+(define-generic-procedure-handler g:apply
+  (match-args untyped-lambda? list?)
+  (lambda (proc args)
+    (if (not (= (length args) 1))
+        (error "Wrong number of operands, expected 1, got" (length args)))
+    (let* ((param (lambda-param proc))
+           (body (lambda-body proc))
+           (arg (car args)))
+      (subst param arg body))))
+
 ;; Pretty printing
 (define (trace-step redex result reduction-type)
   (display "; ")
@@ -249,6 +274,7 @@
 
 (define (pp-type typ)
   (cond ((symbol? typ) (display typ))
+        ((eq? typ #f) (display ""))
         ((and (pair? typ) (eq? (car typ) '->))
          (display "(")
          (pp-type (cadr typ))
