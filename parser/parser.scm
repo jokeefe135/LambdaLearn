@@ -1,3 +1,6 @@
+(load "parser/parse-typed.scm")
+(load "parser/parse-untyped.scm")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TOKENIZER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

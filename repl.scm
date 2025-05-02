@@ -1,9 +1,8 @@
+(load "parser/parser.scm")
+(load "interpreter/interpreter.scm")
+
 (define (repl)
-  (load "parser/parser.scm")
-  (load "parser/parse-typed.scm")
-  (load "parser/parse-untyped.scm")
-  (load "interpreter.scm")
-  (display "LambdaLearn REPL v1")
+  (display "LambdaLearn REPL")
   (newline)
   (let loop ()
     (display "> ")

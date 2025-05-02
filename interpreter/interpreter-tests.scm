@@ -3,7 +3,7 @@
 (load "parser/parser.scm")
 (load "parser/parse-typed.scm")
 (load "parser/parse-untyped.scm")
-(load "interpreter.scm")
+(load "interpreter/interpreter.scm")
 
 ;; Helper function to run a test case
 (define (run-test name input expected)
