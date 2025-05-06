@@ -1,17 +1,17 @@
+(load
+ (string-append (->namestring (pwd)) "parser/parse-typed.scm"))
+(load
+ (string-append (->namestring (pwd)) "parser/parse-untyped.scm"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TOKENIZER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; tokenize : String -> (Listof Symbol)
-;; Splits on whitespace and these single‑char tokens:  ( ) λ . :
-;; Recognises the two‑char sequence "->" as a single token.
-;; Identifiers match  [A‑Za‑z_][A‑Za‑z0‑9_]*  .
-
-;; tokenize : String -> (Listof Symbol)
-;;   splits on whitespace and these tokens:
-;;     single-char  : ( ) λ . :
-;;     two-char     : ->
-;;   anything else matching [A-Za-z_][A-Za-z0-9_]* becomes an identifier symbol
+;; Splits on whitespace and these tokens:
+;;   single-char  : ( ) λ . : =
+;;   two-char     : ->
+;; Identifiers match [A-Za-z_][A-Za-z0-9_]*.
 (define (tokenize str)
   (let* ((len (string-length str)))
 
@@ -34,13 +34,12 @@
                (loop (+ i 1) tokens))
 
               ;; 2. two-char token "->"
-              ((and (char=? c #\-)           ; first char
-                    (< (+ i 1) len)
+              ((and (char=? c #\-) (< (+ i 1) len)
                     (char=? (string-ref str (+ i 1)) #\>))
                (loop (+ i 2) (cons '-> tokens)))
 
-              ;; 3. one-char tokens: ( ) λ . :
-              ((memv c '(#\( #\) #\λ #\. #\:))
+              ;; 3. one-char tokens: ( ) λ . : =
+              ((memv c '(#\( #\) #\λ #\. #\: #\=))
                (loop (+ i 1)
                      (cons (string->symbol (string c)) tokens)))
 
@@ -71,31 +70,63 @@
 (define sym-period  (string->symbol (string #\.)    ))
 (define sym-colon   (string->symbol (string #\:)    ))
 (define sym-arrow   (string->symbol (string #\- #\>)))
+(define sym-equal   (string->symbol (string #\=)))
 
 (define (identifier? tok)
   (and (symbol? tok)
        (not (member tok (list sym-open sym-close sym-lambda
-                               sym-period sym-colon sym-arrow)))))
+                               sym-period sym-colon sym-arrow sym-equal)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; FRONT‑END DISPATCH
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Heuristic: presence of ':' OR '->' tokens ⇒ typed.
+;; Heuristic: presence of ':' OR '->' tokens means typed.
 (define (typed-tokens? toks)
   (or (member sym-colon toks) (member sym-arrow toks)))
 
+;; Detect assignment syntax: <identifier> '=' <expression>
+(define (assignment? toks)
+  (and (pair? toks)
+       (identifier? (car toks))
+       (pair? (cdr toks))
+       (eq? (cadr toks) sym-equal)))
+
+;; Parse assignment: returns (assign var expr).
+(define (parse-assignment tokens)
+  (let ((var (car tokens))
+        (rest1 (cddr tokens)))
+    (if (typed-tokens? rest1)
+        (let-values (((expr rest2) (parse-expression-typed rest1)))
+          (values (list 'assign var expr) rest2))
+        (let-values (((expr rest2) (parse-expression-untyped rest1)))
+          (values (list 'assign var expr) rest2)))))
+
 (define (parse-tokens toks)
-  (if (typed-tokens? toks)
-      (let-values (((expr rest) (parse-expression-typed toks)))
-        (if (null? rest)
-            expr
-            (error "typed parse: extra tokens" rest)))
-      (let-values (((expr rest) (parse-expression-untyped toks)))
-        (if (null? rest)
-            expr
-            (error "untyped parse: extra tokens" rest)))))
+  (cond
+    ;; assignment: X = expr
+    ((assignment? toks)
+     (let-values (((expr rest) (parse-assignment toks)))
+       (if (null? rest)
+           expr
+           (error "assignment parse: extra tokens" rest))))
+    ;; typed lambda expression
+    ((typed-tokens? toks)
+     (let-values (((expr rest) (parse-expression-typed toks)))
+       (if (null? rest)
+           expr
+           (error "typed parse: extra tokens" rest))))
+    ;; untyped lambda expression
+    (else
+     (let-values (((expr rest) (parse-expression-untyped toks)))
+       (if (null? rest)
+           expr
+           (error "untyped parse: extra tokens" rest))))))
 
 ;; User‑facing entry pt: takes a raw string.
 (define (parse str)
   (parse-tokens (tokenize str)))
+
+
+(pp (parse "(λk. (λm. m m) (λm. m m)) (λn. k (n n))"))
+(pp (parse "F = λx.x"))
