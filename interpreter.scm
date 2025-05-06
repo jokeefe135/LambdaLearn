@@ -1,9 +1,14 @@
+;; Global environment for top-level assignments
+(define global-env '())
+
 ;; AST predicates and accessors
 (define (variable? expr) (symbol? expr))
 (define (lambda? expr)
   (and (pair? expr) (eq? (car expr) 'lambda)))
 (define (application? expr)
   (and (pair? expr) (eq? (car expr) 'app)))
+(define (assignment? expr)
+  (and (pair? expr) (eq? (car expr) 'assign)))
 (define (operator expr) (cadr expr))
 (define (operand expr) (caddr expr))
 
@@ -82,14 +87,34 @@
   (newline))
 
 ;; Eval handlers
+
+;; Eval handler for assignments: bind and return the variable
+(define-generic-procedure-handler g:eval
+  (match-args assignment?)
+  (lambda (expr)
+    (let ((var (cadr expr))
+          (rhs (caddr expr)))
+      (let ((val (g:eval rhs)))
+        (set! global-env
+              (cons (cons var val)
+                    (remove-binding var global-env)))
+        var))))
+
+;; Eval handler for variables: lookup in global-env
 (define-generic-procedure-handler g:eval
   (match-args variable?)
-  (lambda (expr) expr))
+  (lambda (expr)
+    (let ((binding (assoc expr global-env)))
+      (if binding
+          (cdr binding)
+          expr))))
 
+;; Eval handler for lambdas: return as-is
 (define-generic-procedure-handler g:eval
   (match-args lambda?)
   (lambda (expr) expr))
 
+;; Eval handler for applications
 (define-generic-procedure-handler g:eval
   (match-args application?)
   (lambda (expr)
