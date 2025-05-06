@@ -1,7 +1,8 @@
+(load "parser/parser.scm")
+(load "interpreter/interpreter.scm")
+
 (define (repl)
-  (load "parser.scm")
-  (load "interpreter.scm")
-  (display "LambdaLearn REPL v1")
+  (display "LambdaLearn REPL")
   (newline)
   (let loop ()
     (display "> ")
@@ -16,6 +17,9 @@
        (else
         (let* ((expr   (parse line))
                (result (g:eval expr)))
+          (display "; Input: ")
+          (pp-expr expr)
+          (newline)
           (write result)
           (newline)
           (loop)))))))

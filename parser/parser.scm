@@ -1,17 +1,29 @@
+<<<<<<< HEAD
 (load
  (string-append (->namestring (pwd)) "parser/parse-typed.scm"))
 (load
  (string-append (->namestring (pwd)) "parser/parse-untyped.scm"))
+=======
+(load "parser/parse-typed.scm")
+(load "parser/parse-untyped.scm")
+>>>>>>> modular-typed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TOKENIZER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; tokenize : String -> (Listof Symbol)
+<<<<<<< HEAD
 ;; Splits on whitespace and these tokens:
 ;;   single-char  : ( ) λ . : =
 ;;   two-char     : ->
 ;; Identifiers match [A-Za-z_][A-Za-z0-9_]*.
+=======
+;; Splits on whitespace and these single‑char tokens:  ( ) λ . : -> |
+;; Recognises numeric literals, boolean literals, and identifiers
+;; Identifiers match  [A‑Za‑z_][A‑Za‑z0‑9_]*  .
+
+>>>>>>> modular-typed
 (define (tokenize str)
   (let* ((len (string-length str)))
 
@@ -38,27 +50,37 @@
                     (char=? (string-ref str (+ i 1)) #\>))
                (loop (+ i 2) (cons '-> tokens)))
 
+<<<<<<< HEAD
               ;; 3. one-char tokens: ( ) λ . : =
               ((memv c '(#\( #\) #\λ #\. #\: #\=))
+=======
+              ;; 3. one-char tokens: ( ) λ . : |
+              ((memv c '(#\( #\) #\λ #\. #\: #\|))
+>>>>>>> modular-typed
                (loop (+ i 1)
                      (cons (string->symbol (string c)) tokens)))
 
-              ;; 4. identifier
+              ;; 4. numeric literal
+              ((is-digit? c)
+               (let scan ((j i))
+                 (if (and (< j len) (is-digit? (string-ref str j)))
+                     (scan (+ j 1))
+                     (let ((num (string->number (substring str i j))))
+                       (loop j (cons num tokens))))))
+
+              ;; 5. boolean literal
               ((is-ident-start? c)
                (let scan ((j i))
                  (if (and (< j len) (is-ident-part? (string-ref str j)))
                      (scan (+ j 1))
                      (let ((name (substring str i j)))
-                       (loop j (cons (string->symbol name) tokens))))))
+                       (cond
+                         ((string=? name "true") (loop j (cons #t tokens)))
+                         ((string=? name "false") (loop j (cons #f tokens)))
+                         (else (loop j (cons (string->symbol name) tokens))))))))
 
-              ;; 5. anything else → error
+              ;; 6. anything else → error
               (else (error "tokenize: unexpected character" c))))))))
-;; Tests
-;; (tokenize "λx:Nat. x")
-;; => (λ x : |Nat| |.| x)
-
-;; (tokenize "(Nat -> Nat) -> Bool")
-;; => (|(| |Nat| -> |Nat| |)| -> |Bool'|)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; COMMON SYMBOL CONSTANTS
@@ -70,12 +92,24 @@
 (define sym-period  (string->symbol (string #\.)    ))
 (define sym-colon   (string->symbol (string #\:)    ))
 (define sym-arrow   (string->symbol (string #\- #\>)))
+<<<<<<< HEAD
 (define sym-equal   (string->symbol (string #\=)))
+(define sym-bar     (string->symbol (string #\|)    ))
+=======
+(define sym-bar     (string->symbol (string #\|)    ))
+>>>>>>> modular-typed
 
 (define (identifier? tok)
   (and (symbol? tok)
        (not (member tok (list sym-open sym-close sym-lambda
-                               sym-period sym-colon sym-arrow sym-equal)))))
+<<<<<<< HEAD
+                               sym-period sym-colon sym-arrow sym-equal sym-bar)))))
+=======
+                               sym-period sym-colon sym-arrow sym-bar)))))
+
+(define (literal? tok)
+  (or (number? tok) (boolean? tok)))
+>>>>>>> modular-typed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; FRONT‑END DISPATCH

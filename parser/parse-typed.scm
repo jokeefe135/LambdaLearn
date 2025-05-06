@@ -4,7 +4,7 @@
 
 ;; Grammar (right‑associative arrows):
 ;;   type        ::= type‑simple [ '->' type ]
-;;   type‑simple ::= identifier | '(' type ')'
+;;   type‑simple ::= identifier | '(' type ')' | '|' identifier '|'
 
 (define (parse-type tokens)
   (let-values (((lhs rest1) (parse-type-simple tokens)))
@@ -15,6 +15,12 @@
 
 (define (parse-type-simple tokens)
   (cond
+    ((eq? (car tokens) sym-bar)
+     (unless (and (pair? (cdr tokens)) (identifier? (cadr tokens)))
+       (error "parse-type: expected identifier after '|'"))
+     (unless (and (pair? (cddr tokens)) (eq? (caddr tokens) sym-bar))
+       (error "parse-type: expected '|' after identifier"))
+     (values (cadr tokens) (cdddr tokens)))
     ((identifier? (car tokens))
      (values (car tokens) (cdr tokens)))
     ((eq? (car tokens) sym-open)
@@ -53,7 +59,8 @@
       (if (and (pair? ts)
                (or (identifier? (car ts))
                    (eq? (car ts) sym-open)
-                   (eq? (car ts) sym-lambda)))
+                   (eq? (car ts) sym-lambda)
+                   (literal? (car ts))))
           (let-values (((arg rest2) (parse-atomic-typed ts)))
             (loop (list 'app acc arg) rest2))
           (values acc ts)))))
@@ -61,6 +68,8 @@
 (define (parse-atomic-typed tokens)
   (cond
     ((identifier? (car tokens))
+     (values (car tokens) (cdr tokens)))
+    ((literal? (car tokens))
      (values (car tokens) (cdr tokens)))
     ((eq? (car tokens) sym-open)
      (let-values (((expr rest) (parse-expression-typed (cdr tokens))))
