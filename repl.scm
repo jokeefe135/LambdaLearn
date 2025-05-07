@@ -1,6 +1,3 @@
-(load "parser/parser.scm")
-(load "interpreter/interpreter.scm")
-
 (define (repl)
   (display "LambdaLearn REPL")
   (newline)

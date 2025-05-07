@@ -1,3 +1,10 @@
+;; --- Global environment for top-level assignments ---------------------------
+(define global-env '())
+
+;; Utility to remove an existing binding for a variable
+(define (remove-binding var env)
+  (filter (lambda (b) (not (eq? (car b) var))) env))
+
 ;; Core AST definitions and predicates
 (define-record-type ast-node
   (make-ast-node type data)
@@ -5,17 +12,20 @@
   (type ast-node-type)
   (data ast-node-data))
 
-(define (variable? expr) (symbol? expr))
-(define (literal? expr) (or (number? expr) (boolean? expr)))
-(define (lambda? expr) (and (pair? expr) (eq? (car expr) 'lambda)))
-(define (typed-lambda? expr) (and (lambda? expr) (not (eq? (caddr expr) #f))))
-(define (untyped-lambda? expr) (and (lambda? expr) (eq? (caddr expr) #f)))
-(define (application? expr) (and (pair? expr) (eq? (car expr) 'app)))
+(define (variable? expr)      (symbol? expr))
+(define (literal? expr)       (or (number? expr) (boolean? expr)))
+(define (lambda? expr)        (and (pair? expr) (eq? (car expr) 'lambda)))
+(define (typed-lambda? expr)  (and (lambda? expr) (not (eq? (caddr expr) #f))))
+(define (untyped-lambda? expr)
+  (and (lambda? expr) (eq? (caddr expr) #f)))
+(define (application? expr)   (and (pair? expr) (eq? (car expr) 'app)))
 (define (typed-application? expr)
   (and (application? expr)
-       (or (typed-lambda? (operator expr))
+       (or (typed-lambda?    (operator expr))
            (typed-application? (operator expr))
            (typed-application? (operand expr)))))
+(define (interpreter-assignment? expr)
+  (and (pair? expr) (eq? (car expr) 'assign)))
 
 ;; Expression accessors
 (define (operator expr) (cadr expr))
@@ -175,32 +185,48 @@
   (lambda (proc args) (error "No application strategy defined for procedure type:" proc))))
 
 ;; Generic procedure handlers
+
+;; Assignment handler: bind and return the variable
+(define-generic-procedure-handler g:eval
+  (match-args interpreter-assignment?)
+  (lambda (expr)
+    (let ((var (cadr expr))
+          (rhs (caddr expr)))
+      (let ((val (g:eval rhs)))
+        (set! global-env
+              (cons (cons var val)
+                    (remove-binding var global-env)))
+        var))))
+
+;; Variable handler: lookup in global environment
 (define-generic-procedure-handler g:eval
   (match-args variable?)
-  (lambda (expr) expr))
+  (lambda (expr)
+    (let ((binding (assoc expr global-env)))
+      (if binding (cdr binding) expr))))
 
+;; Literal handler: self-evaluate
 (define-generic-procedure-handler g:eval
   (match-args literal?)
   (lambda (expr) expr))
 
+;; Lambda handler: perform α-reduction if possible
 (define-generic-procedure-handler g:eval
   (match-args lambda?)
   (lambda (expr)
     (let ((reduced (alpha-reduce expr)))
       (if (not (eq? reduced expr))
-          (begin
-            (trace-step expr reduced "α")
-            (g:eval reduced))
+          (begin (trace-step expr reduced "α")
+                 (g:eval reduced))
           expr))))
 
+;; Typed application handler (β-reduction with type check)
 (define-generic-procedure-handler g:eval
   (match-args typed-application?)
   (lambda (expr)
-    (let* ((raw-op (operator expr))
-           (raw-arg (operand expr))
-           (proc (g:eval raw-op))
-           (arg raw-arg)
-           (redex (list 'app proc arg))
+    (let* ((proc     (g:eval (operator expr)))
+           (arg      (operand expr))
+           (redex    (list 'app proc arg))
            (new-expr (g:apply proc (list arg))))
       (trace-step redex new-expr "β")
       (g:eval new-expr))))
@@ -253,28 +279,35 @@
   (newline))
 
 (define (pp-expr expr)
-  (cond ((variable? expr) (display expr))
-        ((literal? expr) (display expr))
-        ((lambda? expr)
-         (display "λ")
-         (display (lambda-param expr))
-         (if (typed-lambda? expr)
-             (begin
-               (display ":")
-               (pp-type (lambda-type expr))))
-         (display ".")
-         (pp-expr (lambda-body expr)))
-        ((application? expr)
-         (display "(")
-         (pp-expr (operator expr))
-         (display " ")
-         (pp-expr (operand expr))
-         (display ")"))
-        (else (error "pp: unknown expr type" expr))))
+  (cond
+    ((variable? expr)      (display expr))
+    ((literal? expr)       (display expr))
+    ((interpreter-assignment? expr)
+     (let ((var (cadr expr))
+           (rhs (caddr expr)))
+       (display var)
+       (display " = ")
+       (pp-expr rhs)))
+    ((lambda? expr)
+     (display "λ")
+     (display (lambda-param expr))
+     (when (typed-lambda? expr)
+       (display ":")
+       (pp-type  (lambda-type expr)))
+     (display ".")
+     (pp-expr  (lambda-body expr)))
+    ((application? expr)
+     (display "(")
+     (pp-expr   (operator expr))
+     (display " ")
+     (pp-expr   (operand expr))
+     (display ")"))
+    (else
+     (error "pp: unknown expr type" expr))))
 
 (define (pp-type typ)
   (cond ((symbol? typ) (display typ))
-        ((eq? typ #f) (display ""))
+        ((eq? typ #f)   (display ""))
         ((and (pair? typ) (eq? (car typ) '->))
          (display "(")
          (pp-type (cadr typ))

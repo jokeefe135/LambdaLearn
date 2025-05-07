@@ -1,29 +1,12 @@
-<<<<<<< HEAD
-(load
- (string-append (->namestring (pwd)) "parser/parse-typed.scm"))
-(load
- (string-append (->namestring (pwd)) "parser/parse-untyped.scm"))
-=======
-(load "parser/parse-typed.scm")
-(load "parser/parse-untyped.scm")
->>>>>>> modular-typed
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TOKENIZER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; tokenize : String -> (Listof Symbol)
-<<<<<<< HEAD
 ;; Splits on whitespace and these tokens:
 ;;   single-char  : ( ) λ . : =
 ;;   two-char     : ->
 ;; Identifiers match [A-Za-z_][A-Za-z0-9_]*.
-=======
-;; Splits on whitespace and these single‑char tokens:  ( ) λ . : -> |
-;; Recognises numeric literals, boolean literals, and identifiers
-;; Identifiers match  [A‑Za‑z_][A‑Za‑z0‑9_]*  .
-
->>>>>>> modular-typed
 (define (tokenize str)
   (let* ((len (string-length str)))
 
@@ -50,13 +33,8 @@
                     (char=? (string-ref str (+ i 1)) #\>))
                (loop (+ i 2) (cons '-> tokens)))
 
-<<<<<<< HEAD
-              ;; 3. one-char tokens: ( ) λ . : =
-              ((memv c '(#\( #\) #\λ #\. #\: #\=))
-=======
-              ;; 3. one-char tokens: ( ) λ . : |
-              ((memv c '(#\( #\) #\λ #\. #\: #\|))
->>>>>>> modular-typed
+              ;; 3. one-char tokens: ( ) λ . : = |
+              ((memv c '(#\( #\) #\λ #\. #\: #\= #\|))
                (loop (+ i 1)
                      (cons (string->symbol (string c)) tokens)))
 
@@ -92,24 +70,13 @@
 (define sym-period  (string->symbol (string #\.)    ))
 (define sym-colon   (string->symbol (string #\:)    ))
 (define sym-arrow   (string->symbol (string #\- #\>)))
-<<<<<<< HEAD
 (define sym-equal   (string->symbol (string #\=)))
 (define sym-bar     (string->symbol (string #\|)    ))
-=======
-(define sym-bar     (string->symbol (string #\|)    ))
->>>>>>> modular-typed
 
 (define (identifier? tok)
   (and (symbol? tok)
        (not (member tok (list sym-open sym-close sym-lambda
-<<<<<<< HEAD
                                sym-period sym-colon sym-arrow sym-equal sym-bar)))))
-=======
-                               sym-period sym-colon sym-arrow sym-bar)))))
-
-(define (literal? tok)
-  (or (number? tok) (boolean? tok)))
->>>>>>> modular-typed
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; FRONT‑END DISPATCH
@@ -120,7 +87,7 @@
   (or (member sym-colon toks) (member sym-arrow toks)))
 
 ;; Detect assignment syntax: <identifier> '=' <expression>
-(define (assignment? toks)
+(define (parser-assignment? toks)
   (and (pair? toks)
        (identifier? (car toks))
        (pair? (cdr toks))
@@ -139,7 +106,7 @@
 (define (parse-tokens toks)
   (cond
     ;; assignment: X = expr
-    ((assignment? toks)
+    ((parser-assignment? toks)
      (let-values (((expr rest) (parse-assignment toks)))
        (if (null? rest)
            expr
@@ -161,6 +128,6 @@
 (define (parse str)
   (parse-tokens (tokenize str)))
 
-
+;; TODO: add to tests file
 (pp (parse "(λk. (λm. m m) (λm. m m)) (λn. k (n n))"))
 (pp (parse "F = λx.x"))
