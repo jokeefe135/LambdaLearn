@@ -15,15 +15,17 @@
 (define (variable? expr)      (symbol? expr))
 (define (literal? expr)       (or (number? expr) (boolean? expr)))
 (define (lambda? expr)        (and (pair? expr) (eq? (car expr) 'lambda)))
-(define (typed-lambda? expr)  (and (lambda? expr) (not (eq? (caddr expr) #f))))
+;; A lambda is *typed* only if it has four parts: (lambda <param> <Type> <body>)
+(define (typed-lambda? expr)
+  (and (lambda? expr) (> (length expr) 3)))
+;; A lambda with exactly three parts is untyped: (lambda <param> <body>)
 (define (untyped-lambda? expr)
-  (and (lambda? expr) (eq? (caddr expr) #f)))
+  (and (lambda? expr) (= (length expr) 3)))
 (define (application? expr)   (and (pair? expr) (eq? (car expr) 'app)))
 (define (typed-application? expr)
+  ;; treat an application as typed only when its operator is typed
   (and (application? expr)
-       (or (typed-lambda?    (operator expr))
-           (typed-application? (operator expr))
-           (typed-application? (operand expr)))))
+       (typed-lambda? (operator expr))))
 (define (interpreter-assignment? expr)
   (and (pair? expr) (eq? (car expr) 'assign)))
 
@@ -84,12 +86,16 @@
                      (body-type (type-of-aux body new-env)))
                 (list '-> param-type body-type)))
              ((application? expr)
-              (let ((op-type (type-of-aux (operator expr) env))
-                    (arg-type (type-of-aux (operand expr) env)))
-                (cond ((not (pair? op-type))
-                       (error "Type error: expected function type but got" op-type))
-                      ((not (eq? (car op-type) '->))
-                       (error "Type error: expected function type but got" op-type))
+              (let ((op-type  (type-of-aux (operator expr) env))
+                    (arg-type (type-of-aux (operand  expr) env)))
+                (cond
+                 ((or (eq? op-type '|Any|)    ; unknown
+                      (eq? op-type #f))
+                  '|Any|)
+                  ((not (pair? op-type))
+                    (error "Type error: expected function type but got" op-type))
+                  ((not (eq? (car op-type) '->))
+                    (error "Type error: expected function type but got" op-type))
                       ((and (pair? arg-type) (eq? (car arg-type) '->))
                        (if (type-compatible? (cadr op-type) arg-type)
                            (caddr op-type)
@@ -246,13 +252,16 @@
       (subst param arg body))))
 
 ;; Handlers for untyped operations
+
+;; Untyped application handler – weak (normal‑order) strategy
+;; Evaluate the operator to a lambda, but delay the operand.
+;; This prevents us from diving into a branch that may never be used
+;; (exactly what we need for Church‑encoded IF).
 (define-generic-procedure-handler g:eval
   (match-args application?)
   (lambda (expr)
-    (let* ((raw-op (operator expr))
-           (raw-arg (operand expr))
-           (proc (g:eval raw-op))
-           (arg (g:eval raw-arg))
+    (let* ((proc  (g:eval (operator expr)))   ; head‑reduce only
+           (arg   (operand expr))             ; keep raw / unevaluated
            (redex (list 'app proc arg))
            (new-expr (g:apply proc (list arg))))
       (trace-step redex new-expr "β")

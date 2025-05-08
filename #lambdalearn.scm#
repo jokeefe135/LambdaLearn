@@ -6,6 +6,7 @@
 (load (string-append (->namestring (pwd)) "parser/parse-untyped.scm"))
 (load (string-append (->namestring (pwd)) "parser/parser.scm"))
 (load (string-append (->namestring (pwd)) "interpreter/interpreter.scm"))
-(load (string-append (->namestring (pwd)) "repl.scm"))
+;;(load (string-append (->namestring (pwd)) "repl.scm"))
+(load (string-append (->namestring (pwd)) "tutorial_repl.scm"))
 
 (repl)
