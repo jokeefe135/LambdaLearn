@@ -64,7 +64,7 @@
       (display "Lesson 1: Identity\nRecall that in λ-calculus, λ<var>.<body> defines a function that
 returns <body> when applied to <var>.  Write the identity
 function using x as the variable.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 0)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 0))))
     (lambda (_e _r) (display "Good! You have the identity.\n\n")))
 
    ;; 1 β-reduction demo
@@ -72,34 +72,34 @@ function using x as the variable.") (newline) (hint))
     (lambda ()
       (display "Lesson 2: β-reduction\nApply your identity to the atomic \"FOO\" so we can
 watch it reduce.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 1)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 1))))
     (lambda (_e _r) (display "Nice! One β-reduction and we're left with the argument.\n\n")))
 
-   ;; 2 α-reduction demo
+   ;; 2 α-conversion demo
    (make-lesson
     (lambda ()
-      (display "Lesson 3: α-reduction\nTwo lambda terms that differ only by variable names are
+      (display "Lesson 3: α-conversion\nTwo lambda terms that differ only by variable names are
 alpha equivalent.  Enter ((λx.(λx.x)) f y) to observe how the
-interpreter safely renames the inner x before reducing, i.e., does an α-reduction.")
+interpreter safely renames the inner x before reducing, i.e., does an α-conversion.")
       (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 2)))
-    (lambda (_e _r) (display "Great! You just witnessed α-reduction in action.\n\n")))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 2))))
+    (lambda (_e _r) (display "Great! You just witnessed α-conversion in action.\n\n")))
 
    ;; 3 Typed demo
    (make-lesson
     (lambda ()
       (display "Lesson 4: Static types\nProvide a statically-typed identity that only accepts integers,
 then apply it to 5 using \"x\" as the variable.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 3)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 3))))
     (lambda (_e _r)
-      (display "Type-checking passed and the term reduces to 5.  Nice!\n\n")))
+      (display "Type-checking passed and the term reduces to 5. Nice!\n\n")))
 
    ;; 4 TRUE
    (make-lesson
     (lambda ()
       (display "Lesson 5: Church booleans - TRUE\nEncode TRUE as a function that takes two arguments a and b and
 returns a.  Bind it to TRUE.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 4)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 4))))
     (lambda (_e _r) (display "Nice!\n\n")))
 
    ;; 5 FALSE
@@ -107,21 +107,21 @@ returns a.  Bind it to TRUE.") (newline) (hint))
     (lambda ()
       (display "Lesson 6: Church booleans - FALSE\nNow encode FALSE as a function that returns its second
 argument.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 5)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 5))))
     (lambda (_e _r) (display "Good!\n\n")))
 
    ;; 6 IF
    (make-lesson
     (lambda ()
       (display "Lesson 7: IF\nDefine IF so that IF p a b selects between a and b based on the boolean p.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 6)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 6))))
     (lambda (_e _r) (display "Great!\n\n")))
 
    ;; 7 Test IF
    (make-lesson
     (lambda ()
       (display "Lesson 8: Test IF with TRUE, FOO, and BAR.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 7)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 7))))
     (lambda (_e _r) (display "Branching works!\n\n")))
 
    ;; 8 ZERO
@@ -129,70 +129,70 @@ argument.") (newline) (hint))
     (lambda ()
       (display "Lesson 9: Church numerals - ZERO\nA Church numeral applies a function f exactly n times.
 Define ZERO.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 8)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 8))))
     (lambda (_e _r) (display "Good!\n\n")))
 
    ;; 9 SUCC
    (make-lesson
     (lambda ()
       (display "Lesson 10: Successor (SUCC)\nWrite SUCC, which turns n into n+1.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 9)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 9))))
     (lambda (_e _r) (display "Nice!\n\n")))
 
    ;; 10 ONE
    (make-lesson
     (lambda ()
       (display "Lesson 11: Build ONE using SUCC.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 10)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 10))))
     (lambda (_e _r) (display "Good work!\n\n")))
 
    ;; 11 TWO
    (make-lesson
     (lambda ()
       (display "Lesson 12: Define TWO.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 11)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 11))))
     (lambda (_e _r) (display "\n")))
 
    ;; 12 THREE
    (make-lesson
     (lambda ()
       (display "Lesson 13: Define THREE.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 12)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 12))))
     (lambda (_e _r) (display "\n")))
 
    ;; 13 MUL
    (make-lesson
     (lambda ()
       (display "Lesson 14: Multiplication (MUL).") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 13)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 13))))
     (lambda (_e _r) (display "\n")))
 
    ;; 14 Y combinator
    (make-lesson
     (lambda ()
       (display "Lesson 15: Y combinator\nCombinators are closed lambda terms, i.e., functions without any\nfree variables. Fixed-point combinators are special combinators\nF such that for any function f, F(f) gives a value x\nsatisfying f(x) = x, which provides a way to define\nrecursion. The most famous of these is the\nY combinator. Define the Y combinator.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 14)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 14))))
     (lambda (_e _r) (display "\n")))
 
    ;; 15 PRED
    (make-lesson
     (lambda ()
       (display "Lesson 16: Predecessor (PRED).\nImplement the opposite of SUCC.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 15)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 15))))
     (lambda (_e _r) (display "Nice!\n\n")))
 
    ;; 16 ISZERO
    (make-lesson
     (lambda ()
       (display "Lesson 17: Zero test (ISZERO).") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 16)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 16))))
     (lambda (_e _r) (display "\n")))
 
    ;; 17 FACT
    (make-lesson
     (lambda ()
       (display "Lesson 18: Factorial (FACT) using Y.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 17)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 17))))
     (lambda (_e _r) (display "\n")))
 
    ;; 18 Finale
@@ -200,7 +200,7 @@ Define ZERO.") (newline) (hint))
     (lambda ()
       (display "Lesson 19 (last one): Verify that six PREDs of FACT THREE
 reduce to zero.") (newline) (hint))
-    (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 18)))
+    (lambda (l) (string=? (normalize l) (normalize (vector-ref lesson-answers 18))))
     (lambda (_e _r)
       (display "Success! Factorial of 3 is 6 and six predecessors hit zero.\n")
       (display "Yippee, you're all done. Go get crazy with some lambda calculus!\n")))
@@ -232,7 +232,7 @@ reduce to zero.") (newline) (hint))
      ((string=? norm "skip!")
       (let* ((answer (vector-ref lesson-answers tutorial-idx))
              (expr   (parse answer)))
-        (display "answer: ") (display answer) (newline)
+        (display "Answer: ") (display answer) (newline)
         (let ((result (g:eval expr)))
           (display "; Result: ") (pp-expr result) (newline)
           (advance-to-next-lesson expr result))))
@@ -245,7 +245,7 @@ reduce to zero.") (newline) (hint))
                    (result (g:eval expr)))
               (display "; Result: ") (pp-expr result) (newline)
               (advance-to-next-lesson expr result))
-            (display "That's not what I asked for. Please try again.\n")))))))
+            (display "That's wrong, please try again.\n")))))))
 
 ;; Function to run the repl
 (define (repl)
