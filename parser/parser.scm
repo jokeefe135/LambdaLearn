@@ -1,7 +1,3 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; TOKENIZER
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; tokenize : String -> (Listof Symbol)
 ;; Splits on whitespace and these tokens:
 ;;   single-char  : ( ) λ . : =
@@ -9,7 +5,6 @@
 ;; Identifiers match [A-Za-z_][A-Za-z0-9_]*.
 (define (tokenize str)
   (let* ((len (string-length str)))
-
     ;; character predicates
     (define (is-letter? c)
       (or (and (char>=? c #\A) (char<=? c #\Z))
@@ -45,7 +40,6 @@
                      (scan (+ j 1))
                      (let ((num (string->number (substring str i j))))
                        (loop j (cons num tokens))))))
-
               ;; 5. boolean literal
               ((is-ident-start? c)
                (let scan ((j i))
@@ -57,12 +51,8 @@
                          ((string=? name "false") (loop j (cons #f tokens)))
                          (else (loop j (cons (string->symbol name) tokens))))))))
 
-              ;; 6. anything else → error
+              ;; 6. anything else -> error
               (else (error "tokenize: unexpected character" c))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; COMMON SYMBOL CONSTANTS
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sym-open    (string->symbol (string #\()    ))
 (define sym-close   (string->symbol (string #\))    ))
@@ -77,10 +67,6 @@
   (and (symbol? tok)
        (not (member tok (list sym-open sym-close sym-lambda
                                sym-period sym-colon sym-arrow sym-equal sym-bar)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; FRONT‑END DISPATCH
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Heuristic: presence of ':' OR '->' tokens means typed.
 (define (typed-tokens? toks)
@@ -124,10 +110,5 @@
            expr
            (error "untyped parse: extra tokens" rest))))))
 
-;; User‑facing entry pt: takes a raw string.
 (define (parse str)
   (parse-tokens (tokenize str)))
-
-;; TODO: add to tests file
-(pp (parse "(λk. (λm. m m) (λm. m m)) (λn. k (n n))"))
-(pp (parse "F = λx.x"))

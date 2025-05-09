@@ -7,8 +7,8 @@
 ;;;   (repl)            ; normal REPL with tutorial support
 ;;;
 ;;; The file assumes the following globals are already loaded in the image:
-;;;   * parse   – string → AST      (from parser.scm)
-;;;   * g:eval  – AST → AST         (from interpreter.scm)
+;;;   * parse   – string -> AST      (from parser.scm)
+;;;   * g:eval  – AST -> AST         (from interpreter.scm)
 ;;;   * pp-expr – pretty‑printer    (from interpreter.scm)
 ;;;
 ;;; -
@@ -49,8 +49,8 @@
   (make-lesson prompt check after)
   lesson?
   (prompt  lesson-prompt)   ; => thunk, so we can re-display fresh each time
-  (check   lesson-check)    ; string → boolean
-  (after   lesson-after))   ; (expr result) → void
+  (check   lesson-check)    ; string -> boolean
+  (after   lesson-after))   ; (expr result) -> void
 
 (define lessons
   (vector
@@ -64,7 +64,7 @@
      (lambda (line) (string=? (normalize line) "λx.x"))
      (lambda (expr result)
        (display "Excellent: you constructed λx.x.\n")
-       (display "A β-reduction means applying (λx.M) N → M[x:=N].\n")
+       (display "A β-reduction means applying (λx.M) N -> M[x:=N].\n")
        (display "\nLesson 2: Notation for application\n")
        (display "Watch it reduce: Type:  (λx.x) FOO\n")))
 
@@ -73,7 +73,7 @@
      (lambda () #f)
      (lambda (line) (string=? (normalize line) "(λx.x) FOO"))
      (lambda (expr result)
-       (display "Great! (λx.x) FOO → FOO by one β-reduction.\n")
+       (display "Great! (λx.x) FOO -> FOO by one β-reduction.\n")
        (display "\nLesson 3: Church encodings\n")
        (display "Church encodings represent data like booleans & numerals as pure functions.\n")
        (display "Define TRUE.  Type:\n")

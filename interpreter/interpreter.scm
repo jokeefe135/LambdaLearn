@@ -1,29 +1,27 @@
-;; --- Global environment for top-level assignments ---------------------------
 (define global-env '())
 
-;; Utility to remove an existing binding for a variable
 (define (remove-binding var env)
   (filter (lambda (b) (not (eq? (car b) var))) env))
 
-;; Core AST definitions and predicates
 (define-record-type ast-node
   (make-ast-node type data)
   ast-node?
   (type ast-node-type)
   (data ast-node-data))
 
-(define (variable? expr)      (symbol? expr))
-(define (literal? expr)       (or (number? expr) (boolean? expr)))
-(define (lambda? expr)        (and (pair? expr) (eq? (car expr) 'lambda)))
-;; A lambda is *typed* only if it has four parts: (lambda <param> <Type> <body>)
+(define (variable? expr)      
+  (symbol? expr))
+(define (literal? expr)       
+  (or (number? expr) (boolean? expr)))
+(define (lambda? expr)        
+  (and (pair? expr) (eq? (car expr) 'lambda)))
 (define (typed-lambda? expr)
   (and (lambda? expr) (> (length expr) 3)))
-;; A lambda with exactly three parts is untyped: (lambda <param> <body>)
 (define (untyped-lambda? expr)
   (and (lambda? expr) (= (length expr) 3)))
-(define (application? expr)   (and (pair? expr) (eq? (car expr) 'app)))
+(define (application? expr)   
+  (and (pair? expr) (eq? (car expr) 'app)))
 (define (typed-application? expr)
-  ;; treat an application as typed only when its operator is typed
   (and (application? expr)
        (typed-lambda? (operator expr))))
 (define (interpreter-assignment? expr)
@@ -188,7 +186,6 @@
 (define g:apply (simple-generic-procedure 'apply 2 
   (lambda (proc args) (error "No application strategy defined for procedure type:" proc))))
 
-;; Generic procedure handlers
 
 ;; Assignment handler: bind and return the variable
 (define-generic-procedure-handler g:eval
@@ -214,7 +211,7 @@
   (match-args literal?)
   (lambda (expr) expr))
 
-;; Lambda handler: perform α-reduction if possible
+;; Lambda handler: perform alpha-reduction if possible
 (define-generic-procedure-handler g:eval
   (match-args lambda?)
   (lambda (expr)
@@ -224,13 +221,13 @@
                  (g:eval reduced))
           expr))))
 
-;; Typed application handler (β-reduction with type check)
+;; Typed application handler (beta-reduction with type check)
 (define-generic-procedure-handler g:eval
   (match-args typed-application?)
   (lambda (expr)
-    (let* ((proc     (g:eval (operator expr)))
-           (arg      (operand expr))
-           (redex    (list 'app proc arg))
+    (let* ((proc (g:eval (operator expr)))
+           (arg (operand expr))
+           (redex (list 'app proc arg))
            (new-expr (g:apply proc (list arg))))
       (trace-step redex new-expr "β")
       (g:eval new-expr))))
@@ -249,17 +246,12 @@
             (error "Type error: expected" typ "but got" arg-type)))
       (subst param arg body))))
 
-;; Handlers for untyped operations
 
-;; Untyped application handler – weak (normal‑order) strategy
-;; Evaluate the operator to a lambda, but delay the operand.
-;; This prevents us from diving into a branch that may never be used
-;; (exactly what we need for Church‑encoded IF).
 (define-generic-procedure-handler g:eval
   (match-args application?)
   (lambda (expr)
-    (let* ((proc  (g:eval (operator expr)))   ; head‑reduce only
-           (arg   (operand expr))             ; keep raw / unevaluated
+    (let* ((proc (g:eval (operator expr))) 
+           (arg (operand expr)) 
            (redex (list 'app proc arg))
            (new-expr (g:apply proc (list arg))))
       (trace-step redex new-expr "β")
