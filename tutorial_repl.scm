@@ -88,7 +88,7 @@
    "ISZERO (PRED PRED PRED PRED PRED PRED (FACT THREE))"))
 
 ;; Convenience
-(define (hint) (display "   (type skip! to skip this exercise)\n"))
+(define (hint) (display "   (type skip! to get the answer)\n"))
 
 ;; Vector of lessons ---------------------------------------------------------
 (define lessons
