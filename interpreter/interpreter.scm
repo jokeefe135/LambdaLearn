@@ -49,7 +49,7 @@
 (define (make-type-env) '())
 (define (type-env-extend env var type) (cons (cons var type) env))
 (define (type-env-lookup env var)
-  (cond ((null? env) '|Any|)
+  (cond ((null? env) (error "Unknown Type"))
         ((eq? (caar env) var) (cdar env))
         (else (type-env-lookup (cdr env) var))))
 
@@ -59,9 +59,7 @@
    (lambda (expr) (symbol? expr))
    (lambda (expr) (and (pair? expr) (eq? (car expr) '->)))
    (lambda (expected actual)
-     (cond ((eq? expected #f) #t)  ; Allow untyped to match anything
-           ((eq? actual #f) #t)    ; Allow anything to match untyped
-           ((and (symbol? expected) (symbol? actual))
+     (cond ((and (symbol? expected) (symbol? actual))
             (eq? expected actual))
            ((and (pair? expected) (pair? actual)
                  (eq? (car expected) '->) (eq? (car actual) '->))
@@ -76,40 +74,36 @@
              ((literal? expr)
               (cond ((number? expr) '|Int|)
                     ((boolean? expr) '|Bool|)
-                    (else '|Any|)))
-             ((untyped-lambda? expr) '|Any|)
-             ((typed-lambda? expr)
-              (let* ((param (lambda-param expr))
-                     (param-type (lambda-type expr))
-                     (body (lambda-body expr))
-                     (new-env (type-env-extend env param param-type))
-                     (body-type (type-of-aux body new-env)))
-                (list '-> param-type body-type)))
-             ((application? expr)
-              (let ((op-type  (type-of-aux (operator expr) env))
-                    (arg-type (type-of-aux (operand  expr) env)))
-                (cond
-                 ((or (eq? op-type '|Any|)    ; unknown
-                      (eq? op-type #f))
-                  '|Any|)
+                    (else (error "Type error: expected expr type of Int or Bool, but got" expr))))
+              ((typed-lambda? expr)
+               (let* ((param (lambda-param expr))
+                      (param-type (lambda-type expr))
+                      (body (lambda-body expr))
+                      (new-env (type-env-extend env param param-type))
+                      (body-type (type-of-aux body new-env)))
+                 (list '-> param-type body-type)))
+              ((application? expr)
+               (let ((op-type  (type-of-aux (operator expr) env))
+                     (arg-type (type-of-aux (operand  expr) env)))
+                 (cond
                   ((not (pair? op-type))
-                    (error "Type error: expected function type but got" op-type))
+                   (error "Type error: expected function type but got" op-type))
                   ((not (eq? (car op-type) '->))
-                    (error "Type error: expected function type but got" op-type))
-                      ((and (pair? arg-type) (eq? (car arg-type) '->))
-                       (if (type-compatible? (cadr op-type) arg-type)
-                           (caddr op-type)
-                           (error "Type error in application: expected" 
-                                  (cadr op-type) 
-                                  "but got" 
-                                  arg-type)))
-                      ((not (type-compatible? (cadr op-type) arg-type))
+                   (error "Type error: expected function type but got" op-type))
+                  ((and (pair? arg-type) (eq? (car arg-type) '->))
+                   (if (type-compatible? (cadr op-type) arg-type)
+                       (caddr op-type)
                        (error "Type error in application: expected" 
                               (cadr op-type) 
                               "but got" 
-                              arg-type))
-                      (else (caddr op-type)))))
-             (else '|Any|))))))
+                              arg-type)))
+                  ((not (type-compatible? (cadr op-type) arg-type))
+                   (error "Type error in application: expected" 
+                          (cadr op-type) 
+                          "but got" 
+                          arg-type))
+                  (else (caddr op-type)))))
+             (else (error "Unknown Type")))))))
 
 ;; Global type inference function
 (define (type-of expr)
@@ -136,9 +130,13 @@
              (inner-body (lambda-body inner-lambda))
              (inner-type (lambda-type inner-lambda))
              (new-param (generate-fresh-var inner-param)))
-        (list 'lambda outer-param (lambda-type expr)
-              (list 'lambda new-param inner-type
-                    (subst inner-param new-param inner-body))))))
+	(if (eq? inner-type #f)
+            (list 'lambda outer-param
+		  (list 'lambda new-param
+			(subst inner-param new-param inner-body)))  
+	    (list 'lambda outer-param (lambda-type expr)
+		  (list 'lambda new-param inner-type
+			(subst inner-param new-param inner-body)))))))
 
 ;; Variable handling
 (define fresh-counter 0)

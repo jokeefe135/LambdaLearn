@@ -14,7 +14,7 @@
   (unless (eq? (caddr tokens) sym-period)
     (error "untyped λ: expected '.'"))
   (let-values (((body rest) (parse-expression-untyped (cdddr tokens))))
-    (values (list 'lambda (cadr tokens) #f body) rest)))
+    (values (list 'lambda (cadr tokens) body) rest)))
 
 ;; application ::= atomic { atomic }
 (define (parse-application-untyped tokens)
