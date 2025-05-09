@@ -1,37 +1,9 @@
-;;; --------------------------------------------------------------------------
-;;; lambda_tutorial_repl.scm - Interactive λ-calculus tutor
-;;; --------------------------------------------------------------------------
-;;; A drop-in replacement for your existing repl.scm that adds an interactive
-;;; teaching mode.  Type `learn!` at the prompt to enter a guided tutorial that
-;;; walks through the λ-calculus, Church encodings, and the Y-combinator.
-;;;
-;;;   (load "lambda_tutorial_repl.scm")
-;;;   (repl)            ; normal REPL with tutorial support
-;;;
-;;; The file assumes the following globals are already loaded in the image:
-;;;   * parse   – string → AST      (from parser.scm)
-;;;   * g:eval  – AST → AST         (from interpreter.scm)
-;;;   * pp-expr – pretty-printer    (from interpreter.scm)
-;;;
-;;; New in this version
-;;; -------------------
-;;;  • Added Lesson 3 demonstrating α-conversion using the term
-;;;      ((λx.(λx.x)) f y)
-;;;  • Replaced `help!` with `skip!`, which automatically enters the canonical
-;;;    answer and advances the tutorial.
-;;;  • Beefed-up normalisation: *all* whitespace is ignored when checking the
-;;;    learner’s input, so extra spaces, tabs, or newlines no longer matter.
-;;;
-;;; --------------------------------------------------------------------------
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;  Helper utilities                                                        ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Helpers
 
 (define (char-whitespace? c)
   (memv c '(#\space #\tab #\newline #\return)))
 
-;; Trim leading/trailing whitespace (kept for REPL convenience)
+;; Trim leading/trailing whitespace
 (define (string-trim str)
   (let* ((len (string-length str)))
     (let loop-left ((i 0))
@@ -42,16 +14,14 @@
                 (loop-right (- j 1))))
           (loop-left (+ i 1))))))
 
-;; Normalise a string for *equality testing only* by stripping *all* whitespace.
+;; Normalize a string for equality testing by removing all whitespace
 (define (normalize str)
   (list->string (filter (lambda (c) (not (char-whitespace? c)))
                         (string->list str))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;  Tutorial data                                                           ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Tutorial data
 
-;; Each lesson is a record (make-lesson prompt check after)
+;; Each lesson is a record type
 (define-record-type lesson
   (make-lesson prompt check after)
   lesson?
@@ -59,18 +29,13 @@
   (check  lesson-check)
   (after  lesson-after))
 
-;; Canonical answers – used internally by `skip!`
+;; Answers to each lesson
 (define lesson-answers
   (vector
-   ;; 0 ─ Identity (untyped)
    "λx.x"
-   ;; 1 ─ β-reduction demo
    "(λx.x) FOO"
-   ;; 2 ─ α-reduction demo
    "((λx.(λx.x)) f y)"
-   ;; 3 ─ Typed demo
    "(λx:Int.x) 5"
-   ;; 4–18 ─ rest of the journey
    "TRUE = λa.λb.a"
    "FALSE = λa.λb.b"
    "IF = λp.λa.λb.p a b"
@@ -87,13 +52,13 @@
    "FACT = Y (λfact.λn.IF (ISZERO n) ONE (MUL n (fact (PRED n))))"
    "ISZERO (PRED PRED PRED PRED PRED PRED (FACT THREE))"))
 
-;; Convenience
+;; Hint macro for convenience ig
 (define (hint) (display "   (type skip! to get the answer)\n"))
 
-;; Vector of lessons ---------------------------------------------------------
+;; Vector of lessons
 (define lessons
   (vector
-   ;; 0 ─ Identity -----------------------------------------------------------
+   ;; 0 Identity
    (make-lesson
     (lambda ()
       (display "Lesson 1: Identity\nRecall that in λ-calculus, λ<var>.<body> defines a function that
@@ -102,7 +67,7 @@ function using x as the variable.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 0)))
     (lambda (_e _r) (display "Good! You have the identity.\n\n")))
 
-   ;; 1 ─ β-reduction demo ---------------------------------------------------
+   ;; 1 β-reduction demo
    (make-lesson
     (lambda ()
       (display "Lesson 2: β-reduction\nApply your identity to the atomic \"FOO\" so we can
@@ -110,7 +75,7 @@ watch it reduce.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 1)))
     (lambda (_e _r) (display "Nice! One β-reduction and we're left with the argument.\n\n")))
 
-   ;; 2 ─ α-reduction demo ---------------------------------------------------
+   ;; 2 α-reduction demo
    (make-lesson
     (lambda ()
       (display "Lesson 3: α-reduction\nTwo lambda terms that differ only by variable names are
@@ -120,7 +85,7 @@ interpreter safely renames the inner x before reducing, i.e., does an α-reducti
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 2)))
     (lambda (_e _r) (display "Great! You just witnessed α-reduction in action.\n\n")))
 
-   ;; 3 ─ Typed demo ---------------------------------------------------------
+   ;; 3 Typed demo
    (make-lesson
     (lambda ()
       (display "Lesson 4: Static types\nProvide a statically-typed identity that only accepts integers,
@@ -129,7 +94,7 @@ then apply it to 5 using \"x\" as the variable.") (newline) (hint))
     (lambda (_e _r)
       (display "Type-checking passed and the term reduces to 5.  Nice!\n\n")))
 
-   ;; 4 ─ TRUE ---------------------------------------------------------------
+   ;; 4 TRUE
    (make-lesson
     (lambda ()
       (display "Lesson 5: Church booleans - TRUE\nEncode TRUE as a function that takes two arguments a and b and
@@ -137,7 +102,7 @@ returns a.  Bind it to TRUE.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 4)))
     (lambda (_e _r) (display "Nice!\n\n")))
 
-   ;; 5 ─ FALSE --------------------------------------------------------------
+   ;; 5 FALSE
    (make-lesson
     (lambda ()
       (display "Lesson 6: Church booleans - FALSE\nNow encode FALSE as a function that returns its second
@@ -145,21 +110,21 @@ argument.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 5)))
     (lambda (_e _r) (display "Good!\n\n")))
 
-   ;; 6 ─ IF -----------------------------------------------------------------
+   ;; 6 IF
    (make-lesson
     (lambda ()
       (display "Lesson 7: IF\nDefine IF so that IF p a b selects between a and b based on the boolean p.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 6)))
     (lambda (_e _r) (display "Great!\n\n")))
 
-   ;; 7 ─ Test IF ------------------------------------------------------------
+   ;; 7 Test IF
    (make-lesson
     (lambda ()
       (display "Lesson 8: Test IF with TRUE, FOO, and BAR.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 7)))
     (lambda (_e _r) (display "Branching works!\n\n")))
 
-   ;; 8 ─ ZERO ---------------------------------------------------------------
+   ;; 8 ZERO
    (make-lesson
     (lambda ()
       (display "Lesson 9: Church numerals - ZERO\nA Church numeral applies a function f exactly n times.
@@ -167,70 +132,70 @@ Define ZERO.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 8)))
     (lambda (_e _r) (display "Good!\n\n")))
 
-   ;; 9 ─ SUCC ---------------------------------------------------------------
+   ;; 9 SUCC
    (make-lesson
     (lambda ()
       (display "Lesson 10: Successor (SUCC)\nWrite SUCC, which turns n into n+1.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 9)))
     (lambda (_e _r) (display "Nice!\n\n")))
 
-   ;; 10 ─ ONE ---------------------------------------------------------------
+   ;; 10 ONE
    (make-lesson
     (lambda ()
       (display "Lesson 11: Build ONE using SUCC.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 10)))
     (lambda (_e _r) (display "Good work!\n\n")))
 
-   ;; 11 ─ TWO ---------------------------------------------------------------
+   ;; 11 TWO
    (make-lesson
     (lambda ()
       (display "Lesson 12: Define TWO.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 11)))
     (lambda (_e _r) (display "\n")))
 
-   ;; 12 ─ THREE -------------------------------------------------------------
+   ;; 12 THREE
    (make-lesson
     (lambda ()
       (display "Lesson 13: Define THREE.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 12)))
     (lambda (_e _r) (display "\n")))
 
-   ;; 13 ─ MUL ---------------------------------------------------------------
+   ;; 13 MUL
    (make-lesson
     (lambda ()
       (display "Lesson 14: Multiplication (MUL).") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 13)))
     (lambda (_e _r) (display "\n")))
 
-   ;; 14 ─ Y combinator ------------------------------------------------------
+   ;; 14 Y combinator
    (make-lesson
     (lambda ()
       (display "Lesson 15: Y combinator\nCombinators are closed lambda terms, i.e., functions without any\nfree variables. Fixed-point combinators are special combinators\nF such that for any function f, F(f) gives a value x\nsatisfying f(x) = x, which provides a way to define\nrecursion. The most famous of these is the\nY combinator. Define the Y combinator.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 14)))
     (lambda (_e _r) (display "\n")))
 
-   ;; 15 ─ PRED --------------------------------------------------------------
+   ;; 15 PRED
    (make-lesson
     (lambda ()
       (display "Lesson 16: Predecessor (PRED).\nImplement the opposite of SUCC.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 15)))
     (lambda (_e _r) (display "Nice!\n\n")))
 
-   ;; 16 ─ ISZERO ------------------------------------------------------------
+   ;; 16 ISZERO
    (make-lesson
     (lambda ()
       (display "Lesson 17: Zero test (ISZERO).") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 16)))
     (lambda (_e _r) (display "\n")))
 
-   ;; 17 ─ FACT --------------------------------------------------------------
+   ;; 17 FACT
    (make-lesson
     (lambda ()
       (display "Lesson 18: Factorial (FACT) using Y.") (newline) (hint))
     (lambda (l) (string=? (normalize l) (vector-ref lesson-answers 17)))
     (lambda (_e _r) (display "\n")))
 
-   ;; 18 ─ Finale ------------------------------------------------------------
+   ;; 18 Finale
    (make-lesson
     (lambda ()
       (display "Lesson 19 (last one): Verify that six PREDs of FACT THREE
@@ -241,9 +206,7 @@ reduce to zero.") (newline) (hint))
       (display "Yippee, you're all done. Go get crazy with some lambda calculus!\n")))
    ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;  Tutorial engine                                                         ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Now we handle the state for the tutorial
 
 (define tutorial-active? #f)
 (define tutorial-idx      0)
@@ -265,7 +228,7 @@ reduce to zero.") (newline) (hint))
 (define (handle-tutorial-line line)
   (let ((norm (normalize line)))
     (cond
-     ;; Skip the current lesson ------------------------------------------------
+     ;; Skip the current lesson
      ((string=? norm "skip!")
       (let* ((answer (vector-ref lesson-answers tutorial-idx))
              (expr   (parse answer)))
@@ -274,7 +237,7 @@ reduce to zero.") (newline) (hint))
           (display "; Result: ") (pp-expr result) (newline)
           (advance-to-next-lesson expr result))))
 
-     ;; Normal submission ------------------------------------------------------
+     ;; Normal submission
      (else
       (let ((lesson (vector-ref lessons tutorial-idx)))
         (if ((lesson-check lesson) line)
@@ -284,10 +247,7 @@ reduce to zero.") (newline) (hint))
               (advance-to-next-lesson expr result))
             (display "That's not what I asked for. Please try again.\n")))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;  Enhanced REPL                                                           ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;; Function to run the repl
 (define (repl)
   ;; Reset tutorial state on each entry
   (set! tutorial-active? #f)
