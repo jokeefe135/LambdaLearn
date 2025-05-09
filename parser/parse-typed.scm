@@ -1,8 +1,6 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; TYPE PARSER
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Typed parser
 
-;; Grammar (right‑associative arrows):
+;; Grammar:
 ;;   type        ::= type‑simple [ '->' type ]
 ;;   type‑simple ::= identifier | '(' type ')' | '|' identifier '|'
 
@@ -31,9 +29,7 @@
     (else
      (error "parse-type: unexpected token" (car tokens)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; TYPED PARSER
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Now we define the functions that parse the tokens
 
 (define (parse-expression-typed tokens)
   (if (and (pair? tokens) (eq? (car tokens) sym-lambda))

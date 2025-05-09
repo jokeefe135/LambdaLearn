@@ -1,7 +1,3 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; UNTYPED PARSE
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define (parse-expression-untyped tokens)
   (if (and (pair? tokens) (eq? (car tokens) sym-lambda))
       (parse-abstraction-untyped tokens)

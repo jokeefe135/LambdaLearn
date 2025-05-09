@@ -54,6 +54,7 @@
               ;; 6. anything else -> error
               (else (error "tokenize: unexpected character" c))))))))
 
+;; Constants to avoid some annoying ahh bugs
 (define sym-open    (string->symbol (string #\()    ))
 (define sym-close   (string->symbol (string #\))    ))
 (define sym-lambda  (string->symbol (string #\λ)    ))
@@ -68,18 +69,18 @@
        (not (member tok (list sym-open sym-close sym-lambda
                                sym-period sym-colon sym-arrow sym-equal sym-bar)))))
 
-;; Heuristic: presence of ':' OR '->' tokens means typed.
+;; Presence of : or -> tokens means typed.
 (define (typed-tokens? toks)
   (or (member sym-colon toks) (member sym-arrow toks)))
 
-;; Detect assignment syntax: <identifier> '=' <expression>
+;; Detect assignment syntax <identifier> = <expression>
 (define (parser-assignment? toks)
   (and (pair? toks)
        (identifier? (car toks))
        (pair? (cdr toks))
        (eq? (cadr toks) sym-equal)))
 
-;; Parse assignment: returns (assign var expr).
+;; Parse assignment, returns (assign var expr).
 (define (parse-assignment tokens)
   (let ((var (car tokens))
         (rest1 (cddr tokens)))
